@@ -22,6 +22,17 @@ NODE_TYPE = config.get("CLUSTER","NODE_TYPE")
 
 ROLE_NAME = config.get("IAM_ROLE","ROLE_NAME")
 
+def drop_tables(cur, conn):
+    for query in drop_table_queries:
+        cur.execute(query)
+        conn.commit()
+
+
+def create_tables(cur, conn):
+    for query in create_table_queries:
+        cur.execute(query)
+        conn.commit()
+
 def prettyRedshiftProps(props):
     pd.DataFrame({"Param":
                   ["CLUSTER_TYPE", "NUM_NODES", "NODE_TYPE", "HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "DB_PORT", "ROLE_NAME"],
@@ -44,6 +55,7 @@ def main():
 
     ENDPOINT = myClusterProps['Endpoint']['Address']
 
+    # conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['DB'].values()))
     conn = psycopg2.connect("postgresql://{}:{}@{}:{}/{}".format(DB_USER, DB_PASSWORD, ENDPOINT, DB_PORT,DB_NAME))
     cur = conn.cursor()
 
