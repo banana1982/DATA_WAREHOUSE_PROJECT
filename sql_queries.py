@@ -10,6 +10,7 @@ S3_LOG_JSONPATH = config.get("S3","LOG_JSONPATH")
 S3_SONG_DATA = config.get("S3","SONG_DATA")
 
 ROLE_NAME = config.get("IAM_ROLE","ROLE_NAME")
+ROLE_ARN = config.get("IAM_ROLE","ROLE_ARN")
 
 # DROP TABLES
 
@@ -24,45 +25,45 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 # CREATE TABLES
 
 staging_events_table_create= ("""
-    CREATE TABLE IF NOT EXISTS staging_events (
-        artist VARCHAR NOT NULL distkey,
-        auth VARCHAR NOT NULL,
-        firstName VARCHAR NOT NULL,
-        gender VARCHAR(1) NOT NULL,
-        itemInSession INT NOT NULL,
-        lastName VARCHAR NOT NULL,
-        length NUMERIC NOT NULL,
-        level VARCHAR NOT NULL,
-        location TEXT NOT NULL,
-        method VARCHAR NOT NULL,
-        page VARCHAR NOT NULL,
-        registration NUMERIC NOT NULL,
-        sessionId INT NOT NULL,
-        song VARCHAR NOT NULL,
-        status INT NOT NULL,
-        ts TIMESTAMP NOT NULL,
-        userAgent TEXT NOT NULL,
-        userId NUMERIC NOT NULL
+    CREATE TABLE staging_events (
+        artist VARCHAR,
+        auth VARCHAR,
+        firstName VARCHAR,
+        gender VARCHAR(1),
+        itemInSession INT,
+        lastName VARCHAR,
+        length NUMERIC,
+        level VARCHAR,
+        location TEXT,
+        method VARCHAR,
+        page VARCHAR,
+        registration NUMERIC,
+        sessionId INT,
+        song VARCHAR,
+        status INT,
+        ts TIMESTAMP,
+        userAgent TEXT,
+        userId NUMERIC
     )
 """)
 
 staging_songs_table_create = ("""
-    CREATE TABLE IF NOT EXISTS staging_songs (
-        num_songs INT NOT NULL,
-        artist_id VARCHAR NOT NULL,
+    CREATE TABLE staging_songs (
+        num_songs INT,
+        artist_id VARCHAR,
         artist_latitude FLOAT,
         artist_location TEXT,
         artist_longitude FLOAT,
-        artist_name VARCHAR NOT NULL distkey,
-        song_id VARCHAR NOT NULL,
-        title VARCHAR NOT NULL,
-        duration NUMERIC NOT NULL,
-        year SMALLINT NOT NULL
+        artist_name VARCHAR,
+        song_id VARCHAR,
+        title VARCHAR,
+        duration NUMERIC,
+        year SMALLINT
     )
 """)
 
 songplay_table_create = ("""
-    CREATE TABLE IF NOT EXISTS songplays (
+    CREATE TABLE songplays (
         songplay_id INT IDENTITY(0,1) PRIMARY KEY,
         start_time TIMESTAMP NOT NULL,
         user_id INT NOT NULL,
@@ -76,7 +77,7 @@ songplay_table_create = ("""
 """)
 
 user_table_create = ("""
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE users (
         user_id INT PRIMARY KEY,
         first_name VARCHAR NOT NULL,
         last_name VARCHAR NOT NULL,
@@ -86,7 +87,7 @@ user_table_create = ("""
 """)
 
 song_table_create = ("""
-    CREATE TABLE IF NOT EXISTS songs (
+    CREATE TABLE songs (
         song_id VARCHAR PRIMARY KEY,
         title VARCHAR NOT NULL,
         artist_id VARCHAR NOT NULL,
@@ -96,7 +97,7 @@ song_table_create = ("""
 """)
 
 artist_table_create = ("""
-    CREATE TABLE IF NOT EXISTS artists (
+    CREATE TABLE artists (
         artist_id VARCHAR PRIMARY KEY,
         name VARCHAR NOT NULL,
         location TEXT,
@@ -106,8 +107,8 @@ artist_table_create = ("""
 """)
 
 time_table_create = ("""
-    CREATE TABLE IF NOT EXISTS time (
-        start_time TIMESTAMP PRIMARY KEY ,
+    CREATE TABLE time (
+        start_time TIMESTAMP PRIMARY KEY,
         hour SMALLINT NOT NULL,
         day SMALLINT NOT NULL,
         week SMALLINT NOT NULL,
@@ -120,16 +121,18 @@ time_table_create = ("""
 # STAGING TABLES
 
 staging_events_copy = ("""
-    copy staging_events from '{}' 
+    copy staging_events from {} 
     credentials 'aws_iam_role={}'
-    JSON '{}' region 'us-west-2'
-""").format(S3_LOG_DATA, ROLE_NAME, S3_LOG_JSONPATH)
+    JSON {} 
+    region 'us-west-2'
+    timeformat as 'epochmillisecs'
+""").format(S3_LOG_DATA, ROLE_ARN, S3_LOG_JSONPATH)
 
 staging_songs_copy = ("""
-    copy staging_songs from '{}' 
+    copy staging_songs from {} 
     credentials 'aws_iam_role={}'
     JSON 'auto' region 'us-west-2'
-""").format(S3_SONG_DATA, ROLE_NAME)
+""").format(S3_SONG_DATA, ROLE_ARN)
 
 # FINAL TABLES
 
