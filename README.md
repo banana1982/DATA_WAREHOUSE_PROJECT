@@ -43,9 +43,9 @@ Using the song and event datasets, you'll need to create a star schema optimized
 
 * File etl.py to load and insert data to tables
 
-## Create .ipynb to testing
+# Step to test
 
-* File etl.ipynb to testing following code in etl.py file
+* Open file connect_cluster.ipynb in Workspace to init/create AWS Redshift
 
 # IMPORTANT NOTES
 Concurrent/Parallel instance launch: 
