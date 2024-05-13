@@ -1,7 +1,6 @@
 import configparser
 import psycopg2
 from sql_queries import create_table_queries, drop_table_queries
-import pandas as pd
 import boto3
 
 config = configparser.ConfigParser()
@@ -24,45 +23,35 @@ ROLE_NAME = config.get("IAM_ROLE","ROLE_NAME")
 
 def drop_tables(cur, conn):
     for query in drop_table_queries:
+        """ Run queries drop tables if existed. """
         cur.execute(query)
         conn.commit()
 
 
 def create_tables(cur, conn):
     for query in create_table_queries:
+        """ Run queries create tables. """
         cur.execute(query)
         conn.commit()
 
-def prettyRedshiftProps(props):
-    pd.DataFrame({"Param":
-                  ["CLUSTER_TYPE", "NUM_NODES", "NODE_TYPE", "HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "DB_PORT", "ROLE_NAME"],
-              "Value":
-                  [CLUSTER_TYPE, NUM_NODES, NODE_TYPE, HOST, DB_NAME, DB_USER, DB_PASSWORD, DB_PORT, ROLE_NAME]
-             })
-    pd.set_option('display.max_colwidth', -1)
-    keysToShow = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", 'VpcId']
-    x = [(k, v) for k,v in props.items() if k in keysToShow]
-    return pd.DataFrame(data=x, columns=["Key", "Value"])
-
 def main():
-    redshift = boto3.client('redshift',
+    try:
+        redshift = boto3.client('redshift',
                        region_name="us-west-2",
                        aws_access_key_id=KEY,
                        aws_secret_access_key=SECRET
                     )
-    myClusterProps = redshift.describe_clusters(ClusterIdentifier=HOST)['Clusters'][0]
-    prettyRedshiftProps(myClusterProps)
-
-    ENDPOINT = myClusterProps['Endpoint']['Address']
-
-    # conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['DB'].values()))
-    conn = psycopg2.connect("postgresql://{}:{}@{}:{}/{}".format(DB_USER, DB_PASSWORD, ENDPOINT, DB_PORT,DB_NAME))
-    cur = conn.cursor()
-
-    drop_tables(cur, conn)
-    create_tables(cur, conn)
-
-    conn.close()
+        myClusterProps = redshift.describe_clusters(ClusterIdentifier=HOST)['Clusters'][0]
+        ENDPOINT = myClusterProps['Endpoint']['Address']
+         # conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['DB'].values()))
+        conn = psycopg2.connect("postgresql://{}:{}@{}:{}/{}".format(DB_USER, DB_PASSWORD, ENDPOINT, DB_PORT,DB_NAME))
+        cur = conn.cursor()
+        drop_tables(cur, conn)
+        create_tables(cur, conn)
+        conn.close()
+    except Exception as e:
+        print(e)
+    
 
 
 if __name__ == "__main__":

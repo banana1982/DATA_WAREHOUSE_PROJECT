@@ -52,11 +52,11 @@ staging_songs_table_create = ("""
         num_songs INT,
         artist_id VARCHAR,
         artist_latitude FLOAT,
-        artist_location TEXT,
+        artist_location VARCHAR(max),
         artist_longitude FLOAT,
-        artist_name VARCHAR,
+        artist_name VARCHAR(max),
         song_id VARCHAR,
-        title VARCHAR,
+        title VARCHAR(max),
         duration NUMERIC,
         year SMALLINT
     )
@@ -89,7 +89,7 @@ user_table_create = ("""
 song_table_create = ("""
     CREATE TABLE songs (
         song_id VARCHAR PRIMARY KEY,
-        title VARCHAR NOT NULL,
+        title VARCHAR(max) NOT NULL,
         artist_id VARCHAR NOT NULL,
         year SMALLINT NOT NULL,
         duration REAL NOT NULL
@@ -99,8 +99,8 @@ song_table_create = ("""
 artist_table_create = ("""
     CREATE TABLE artists (
         artist_id VARCHAR PRIMARY KEY,
-        name VARCHAR NOT NULL,
-        location TEXT,
+        name VARCHAR(max) NOT NULL,
+        location VARCHAR(max),
         latitude FLOAT,
         longitude FLOAT
     )
@@ -167,14 +167,12 @@ user_table_insert = ("""
 song_table_insert = ("""
     INSERT INTO songs (song_id, title, artist_id, year, duration)
         SELECT
-            DISTINCT (se.ts) AS start_time,
-            se.userId AS user_id,
-            se.firstName AS first_name,
-            se.lastName AS last_name,
-            se.gender AS gender,
-            se.level AS level
-        FROM staging_events se 
-            WHERE se.page = 'NextSong';
+            DISTINCT (ss.song_id) AS song_id,
+            ss.title AS title,
+            ss.artist_id AS artist_id,
+            ss.year AS year,
+            ss.duration AS duration
+        FROM staging_songs ss;
 """)
 
 artist_table_insert = ("""

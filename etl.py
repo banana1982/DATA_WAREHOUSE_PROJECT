@@ -1,7 +1,6 @@
 import configparser
 import psycopg2
 from sql_queries import copy_table_queries, insert_table_queries
-import pandas as pd
 import boto3
 
 config = configparser.ConfigParser()
@@ -22,47 +21,39 @@ NODE_TYPE = config.get("CLUSTER","NODE_TYPE")
 
 ROLE_NAME = config.get("IAM_ROLE","ROLE_NAME")
 
-def prettyRedshiftProps(props):
-    pd.DataFrame({"Param":
-                  ["CLUSTER_TYPE", "NUM_NODES", "NODE_TYPE", "HOST", "DB_NAME", "DB_USER", "DB_PASSWORD", "DB_PORT", "ROLE_NAME"],
-              "Value":
-                  [CLUSTER_TYPE, NUM_NODES, NODE_TYPE, HOST, DB_NAME, DB_USER, DB_PASSWORD, DB_PORT, ROLE_NAME]
-             })
-    pd.set_option('display.max_colwidth', -1)
-    keysToShow = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", 'VpcId']
-    x = [(k, v) for k,v in props.items() if k in keysToShow]
-    return pd.DataFrame(data=x, columns=["Key", "Value"])
-
 
 def load_staging_tables(cur, conn):
+    """ Load data and copy to staging tables """
     for query in copy_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def insert_tables(cur, conn):
+    """ Insert data staging tables to tables postgres AWS Redshift. """
     for query in insert_table_queries:
         cur.execute(query)
         conn.commit()
 
 def main():
-    redshift = boto3.client('redshift',
+    try:
+        redshift = boto3.client('redshift',
                        region_name="us-west-2",
                        aws_access_key_id=KEY,
                        aws_secret_access_key=SECRET
                     )
-    myClusterProps = redshift.describe_clusters(ClusterIdentifier=HOST)['Clusters'][0]
-    prettyRedshiftProps(myClusterProps)
+        myClusterProps = redshift.describe_clusters(ClusterIdentifier=HOST)['Clusters'][0]
+        ENDPOINT = myClusterProps['Endpoint']['Address']
 
-    ENDPOINT = myClusterProps['Endpoint']['Address']
+        conn = psycopg2.connect("postgresql://{}:{}@{}:{}/{}".format(DB_USER, DB_PASSWORD, ENDPOINT, DB_PORT,DB_NAME))
+        cur = conn.cursor()
+        
+        load_staging_tables(cur, conn)
+        insert_tables(cur, conn)
 
-    conn = psycopg2.connect("postgresql://{}:{}@{}:{}/{}".format(DB_USER, DB_PASSWORD, ENDPOINT, DB_PORT,DB_NAME))
-    cur = conn.cursor()
-    
-    load_staging_tables(cur, conn)
-    insert_tables(cur, conn)
-
-    conn.close()
+        conn.close()
+    except psycopg2.Error as e:
+        print(e)
 
 
 if __name__ == "__main__":
