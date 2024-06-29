@@ -139,7 +139,7 @@ staging_songs_copy = ("""
 songplay_table_insert = ("""
     INSERT INTO songplays (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
         SELECT
-            DISTINCT(se.ts) AS start_time,
+            se.ts AS start_time,
             se.userId AS user_id,
             se.level AS level,
             ss.song_id AS song_id,
@@ -148,7 +148,7 @@ songplay_table_insert = ("""
             se.location AS location,
             se.userAgent AS user_agent
         FROM staging_events se 
-        JOIN staging_songs ss ON (se.song = ss.title AND se.artist = ss.artist_name)
+        JOIN staging_songs ss ON (se.song = ss.title AND se.artist = ss.artist_name AND se.length = ss.duration)
             WHERE se.page = 'NextSong';
 """)
 
